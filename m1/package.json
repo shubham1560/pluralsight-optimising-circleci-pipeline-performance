@@ -1,0 +1,16 @@
+{
+  "name": "m1",
+  "version": "1.0.0",
+  "description": "Module 1 baseline demo for CircleCI optimization course",
+  "main": "src/math.js",
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:ci": "jest --ci --runInBand --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
+}
