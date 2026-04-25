@@ -8,14 +8,22 @@ jobs:
     steps:
       - checkout:
           path: ~/project
+      - restore_cache:
+          keys:
+            - v1-npm-cache-{{ checksum "package-lock.json" }}
+            - v1-npm-cache-
       - run:
-          name: Install dependencies (no cache)
-          command: npm ci
+          name: Install dependencies (with cache)
+          command: npm ci --prefer-offline
+      - save_cache:
+          key: v1-npm-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
       - run:
           name: Run tests
           command: npm run test:ci
 
 workflows:
-  baseline_pipeline:
+  cached_pipeline:
     jobs:
       - build_and_test
