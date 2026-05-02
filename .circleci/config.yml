@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  build_and_test:
+  build_assets:
     docker:
       - image: cimg/node:20.11
     working_directory: ~/project/m1
@@ -13,17 +13,73 @@ jobs:
             - v2-npm-cache-{{ checksum "package-lock.json" }}
             - v2-npm-cache-
       - run:
-          name: Install dependencies (with cache)
+          name: Install dependencies
           command: npm ci --prefer-offline
       - save_cache:
           key: v2-npm-cache-{{ checksum "package-lock.json" }}
           paths:
             - ~/.npm
       - run:
-          name: Run tests
-          command: npm run test:ci
+          name: Build distributable output
+          command: |
+            mkdir -p dist logs
+            cp src/math.js dist/math.js
+            echo "Build completed at $(date)" > logs/build.log
+      - persist_to_workspace:
+          root: ~/project/m1
+          paths:
+            - dist
+      - store_artifacts:
+          path: logs
+          destination: build-logs
+
+  test_with_workspace:
+    docker:
+      - image: cimg/node:20.11
+    working_directory: ~/project/m1
+    steps:
+      - checkout:
+          path: ~/project
+      - attach_workspace:
+          at: ~/project/m1
+      # Each job is a fresh environment: workspace carries dist/, not node_modules.
+      # Install deps here so npm scripts (jest) resolve from node_modules/.bin.
+      - restore_cache:
+          keys:
+            - v2-npm-cache-{{ checksum "package-lock.json" }}
+            - v2-npm-cache-
+      - run:
+          name: Install dependencies
+          command: npm ci --prefer-offline
+      - save_cache:
+          key: v2-npm-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: Validate workspace handoff
+          command: |
+            test -f dist/math.js
+            echo "Workspace attach succeeded: dist/math.js is available."
+      - run:
+          name: Run tests and generate debug report
+          command: |
+            mkdir -p test-results logs
+            npm run test:ci
+            echo '<testsuite name="demo"><testcase classname="workspace" name="dist_available"/></testsuite>' > test-results/junit.xml
+            echo "Debug info generated at $(date)" > logs/test-debug.log
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - store_artifacts:
+          path: logs
+          destination: test-logs
 
 workflows:
-  cached_pipeline:
+  module2_demo_workspace_vs_artifacts:
     jobs:
-      - build_and_test
+      - build_assets
+      - test_with_workspace:
+          requires:
+            - build_assets
