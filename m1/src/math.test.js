@@ -8,4 +8,10 @@ describe("math helpers", () => {
   test("multiply multiplies two numbers", () => {
     expect(multiply(4, 5)).toBe(20);
   });
+
+  test("optional failure when DEMO_FAIL_TESTS is true", () => {
+    if (process.env.DEMO_FAIL_TESTS === "true") {
+      expect(true).toBe(false);
+    }
+  });
 });

@@ -42,8 +42,6 @@ jobs:
           path: ~/project
       - attach_workspace:
           at: ~/project/m1
-      # Each job is a fresh environment: workspace carries dist/, not node_modules.
-      # Install deps here so npm scripts (jest) resolve from node_modules/.bin.
       - restore_cache:
           keys:
             - v2-npm-cache-{{ checksum "package-lock.json" }}
@@ -61,20 +59,35 @@ jobs:
             test -f dist/math.js
             echo "Workspace attach succeeded: dist/math.js is available."
       - run:
-          name: Run tests and generate debug report
+          name: Run tests (JUnit + coverage) and write debug logs
           command: |
             mkdir -p test-results logs
             npm run test:ci
-            echo '<testsuite name="demo"><testcase classname="workspace" name="dist_available"/></testsuite>' > test-results/junit.xml
-            echo "Debug info generated at $(date)" > logs/test-debug.log
+            {
+              echo "=== CI debug context ==="
+              echo "Timestamp: $(date -u)"
+              echo "Node: $(node -v)"
+              echo "npm: $(npm -v)"
+              echo "CIRCLE_JOB=${CIRCLE_JOB:-}"
+              echo "CIRCLE_BRANCH=${CIRCLE_BRANCH:-}"
+              echo "DEMO_FAIL_TESTS=${DEMO_FAIL_TESTS:-}"
+              echo "--- dist (from workspace) ---"
+              ls -la dist || true
+              echo "--- test-results ---"
+              ls -la test-results || true
+            } | tee logs/ci-context.txt
+            echo "See test-results/junit.xml (JUnit), coverage/ (lcov + HTML), logs/ci-context.txt." >> logs/test-summary.txt
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
-          destination: test-results
+          destination: junit-xml
+      - store_artifacts:
+          path: coverage
+          destination: coverage-report
       - store_artifacts:
           path: logs
-          destination: test-logs
+          destination: test-debug-logs
 
   verify_dist_consumer:
     docker:
