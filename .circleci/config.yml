@@ -111,6 +111,34 @@ jobs:
           path: logs/verify-consumer.txt
           destination: workspace-consumer-verify
 
+  bundle_compare:
+    parameters:
+      size:
+        type: string
+    docker:
+      - image: cimg/node:20.11
+    resource_class: << parameters.size >>
+    working_directory: ~/project/m1
+    steps:
+      - checkout:
+          path: ~/project
+      - restore_cache:
+          keys:
+            - v2-npm-cache-{{ checksum "package-lock.json" }}
+            - v2-npm-cache-
+      - run:
+          name: Install dependencies
+          command: npm ci --prefer-offline
+      - save_cache:
+          key: v2-npm-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: Webpack production bundle
+          command: npm run bundle
+      - store_artifacts:
+          path: dist-webpack
+
 workflows:
   module2_demo_workspace_vs_artifacts:
     jobs:
@@ -121,3 +149,10 @@ workflows:
       - verify_dist_consumer:
           requires:
             - build_assets
+
+  module2_resource_class_compare:
+    jobs:
+      - bundle_compare:
+          matrix:
+            parameters:
+              size: ["small", "medium"]

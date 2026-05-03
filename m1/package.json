@@ -5,7 +5,8 @@
   "main": "src/math.js",
   "scripts": {
     "test": "jest --runInBand",
-    "test:ci": "jest --ci --runInBand --coverage"
+    "test:ci": "jest --ci --runInBand --coverage",
+    "bundle": "webpack --config webpack.config.cjs"
   },
   "keywords": [],
   "author": "",
