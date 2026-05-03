@@ -76,10 +76,35 @@ jobs:
           path: logs
           destination: test-logs
 
+  verify_dist_consumer:
+    docker:
+      - image: cimg/node:20.11
+    working_directory: ~/project/m1
+    steps:
+      - checkout:
+          path: ~/project
+      - attach_workspace:
+          at: ~/project/m1
+      - run:
+          name: Consume workspace only (no dependency install)
+          command: |
+            set -euo pipefail
+            mkdir -p logs
+            test -f dist/math.js
+            echo "Consumer job sees build output from workspace."
+            wc -c dist/math.js | tee logs/verify-consumer.txt
+            echo "Verified at $(date -u +%Y-%m-%dT%H:%MZ)" >> logs/verify-consumer.txt
+      - store_artifacts:
+          path: logs/verify-consumer.txt
+          destination: workspace-consumer-verify
+
 workflows:
   module2_demo_workspace_vs_artifacts:
     jobs:
       - build_assets
       - test_with_workspace:
+          requires:
+            - build_assets
+      - verify_dist_consumer:
           requires:
             - build_assets
