@@ -13,6 +13,7 @@ module.exports = {
         suiteName: "m1 tests",
         classNameTemplate: "{classname}",
         titleTemplate: "{title}",
+        addFileAttribute: "true",
       },
     ],
   ],
