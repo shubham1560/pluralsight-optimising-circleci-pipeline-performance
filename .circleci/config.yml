@@ -259,8 +259,8 @@ jobs:
             set -euo pipefail
             mkdir -p test-results
             echo "CIRCLE_NODE_INDEX=${CIRCLE_NODE_INDEX:-} CIRCLE_NODE_TOTAL=${CIRCLE_NODE_TOTAL:-}"
-            mapfile -t FILES < <(circleci tests glob "src/**/*.test.js" | circleci tests split --split-by=timings --timings-type=file)
-            echo "This shard runs ${#FILES[@]} file(s) (timing-based, --timings-type=file)"
+            mapfile -t FILES < <(circleci tests glob "src/**/*.test.js" | circleci tests split --split-by=timings --timings-type=filename)
+            echo "This shard runs ${#FILES[@]} file(s) (timing-based, --timings-type=filename)"
             if [ ${#FILES[@]} -eq 0 ]; then
               echo "No tests assigned to this container; exiting successfully."
               exit 0
