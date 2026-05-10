@@ -157,6 +157,39 @@ jobs:
       - store_artifacts:
           path: dist-webpack
 
+  module3_sequential_tests:
+    docker:
+      - image: cimg/node:20.11
+    resource_class: medium
+    working_directory: ~/project/m1
+    steps:
+      - checkout:
+          path: ~/project
+      - restore_cache:
+          keys:
+            - v2-npm-cache-{{ checksum "package-lock.json" }}
+            - v2-npm-cache-
+      - run:
+          name: Install dependencies
+          command: npm ci --prefer-offline
+      - save_cache:
+          key: v2-npm-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: Run all tests sequentially on one executor
+          command: |
+            mkdir -p test-results
+            npm run test:ci
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: junit-xml
+      - store_artifacts:
+          path: coverage
+          destination: coverage-report
+
 workflows:
   module2_demo_workspace_vs_artifacts:
     jobs:
@@ -175,3 +208,7 @@ workflows:
           matrix:
             parameters:
               size: ["small", "medium"]
+
+  module3_clip1_sequential_baseline:
+    jobs:
+      - module3_sequential_tests
