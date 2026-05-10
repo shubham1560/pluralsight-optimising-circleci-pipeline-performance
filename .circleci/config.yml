@@ -190,6 +190,49 @@ jobs:
           path: coverage
           destination: coverage-report
 
+  module3_parallel_tests:
+    parallelism: 4
+    docker:
+      - image: cimg/node:20.11
+    resource_class: medium
+    working_directory: ~/project/m1
+    steps:
+      - checkout:
+          path: ~/project
+      - restore_cache:
+          keys:
+            - v2-npm-cache-{{ checksum "package-lock.json" }}
+            - v2-npm-cache-
+      - run:
+          name: Install dependencies
+          command: npm ci --prefer-offline
+      - save_cache:
+          key: v2-npm-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: Run test shard (parallel containers)
+          command: |
+            set -euo pipefail
+            mkdir -p test-results
+            echo "CIRCLE_NODE_INDEX=${CIRCLE_NODE_INDEX:-} CIRCLE_NODE_TOTAL=${CIRCLE_NODE_TOTAL:-}"
+            mapfile -t FILES < <(circleci tests glob "src/**/*.test.js" | circleci tests split --split-by=filesize)
+            echo "This shard runs ${#FILES[@]} file(s)"
+            if [ ${#FILES[@]} -eq 0 ]; then
+              echo "No tests assigned to this container; exiting successfully."
+              exit 0
+            fi
+            printf '%s\n' "${FILES[@]}"
+            npx jest --ci --runInBand --coverage --runTestsByPath "${FILES[@]}"
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: junit-xml
+      - store_artifacts:
+          path: coverage
+          destination: coverage-report
+
 workflows:
   module2_demo_workspace_vs_artifacts:
     jobs:
@@ -212,3 +255,7 @@ workflows:
   module3_clip1_sequential_baseline:
     jobs:
       - module3_sequential_tests
+
+  module3_clip2_parallel:
+    jobs:
+      - module3_parallel_tests
